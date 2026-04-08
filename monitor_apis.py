@@ -1,13 +1,14 @@
 import asyncio
 import re
 from functools import partial
-from pydoll.protocol.network.events import NetworkEvent, ResponseReceivedEvent, RequestWillBeSentEvent
+from pydoll.browser.tab import Tab
+from pydoll.protocol.network.events import NetworkEvent, ResponseReceivedEvent
 
-async def monitor_api_calls(tab, url, api_path) -> list[dict]:
+async def monitor_api_calls(tab: Tab, url: str, api_path: str) -> list[dict]:
     collected_data = []
 
     # Type hint helps IDE autocomplete event keys
-    async def capture_api_response(tab, api_path_regex, data_list, event: ResponseReceivedEvent):
+    async def capture_api_response(tab: Tab, api_path_regex: str, data_list: list, event: ResponseReceivedEvent):
         params = event['params']
         resource_type = params['type']
         url = params['response']['url']
