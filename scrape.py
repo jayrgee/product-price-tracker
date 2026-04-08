@@ -4,8 +4,21 @@ from pydoll.browser.tab import Tab
 from pydoll.browser.chromium import Chrome
 from pydoll.browser.options import ChromiumOptions
 
-from parsers import parse_chemist_warehouse_product, parse_coles_product, parse_iga_product, parse_woolworths_product
+import parsers
 from monitor_apis import monitor_api_calls
+
+def get_parser_for_domain(domain: str):
+    parser_module = getattr(parsers, domain, None)
+    if parser_module is None:
+        print(f"> No parser found for domain: {domain}")
+        return None
+
+    parser = getattr(parser_module, "parse_product", None)
+    if parser is None:
+        print(f"> No parse_product function found in parser for domain: {domain}")
+        return None
+
+    return parser
 
 async def get_next_product_data(tab: Tab) -> dict:
     """Extract product data from __NEXT_DATA__ page props"""
@@ -21,11 +34,16 @@ async def get_next_product_data(tab: Tab) -> dict:
     return product_data['result']['result']['value']
 
 async def scrape_url(url: str) -> None:
-    print(f"> {url=}")
+    print(f"> url: {url}")
 
     ext = tldextract.extract(url)
     domain = ext.domain
     print(f"> domain: {domain}")
+
+    parser = get_parser_for_domain(domain)
+    if parser is None:
+        print(f"> No parser found for domain: {domain}")
+        return
 
     #  https://pydoll.tech/docs/features/configuration/browser-options/?h=chromium
     options = ChromiumOptions()
@@ -57,17 +75,5 @@ async def scrape_url(url: str) -> None:
         # json_data = json.dumps(product_data, indent=2)
         # print(f"Captured JSON: {json_data}")
 
-        match domain:
-            case "chemistwarehouse":
-                data = parse_chemist_warehouse_product(product_data)
-            case "coles":
-                data = parse_coles_product(product_data)
-            case "igashop":
-                data = parse_iga_product(product_data)
-            case "woolworths":
-                data = parse_woolworths_product(product_data)
-            case _:
-                print(f"> No parser available for domain: {domain}")
-                return
-
+        data = parser(product_data)
         data.display_product()
