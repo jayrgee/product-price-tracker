@@ -1,5 +1,6 @@
 import asyncio
 import json
+from pydoll.browser.tab import Tab
 from pydoll.browser.chromium import Chrome
 from pydoll.browser.options import ChromiumOptions
 
@@ -15,6 +16,19 @@ def display_product(product: MerchantProduct) -> None:
         print(f"Was Price: {product.was_price}")
     if product.price_label:
         print(f"Price Label: {product.price_label}")
+
+async def get_next_product_data(tab: Tab) -> dict:
+    """Extract product data from __NEXT_DATA__ page props"""
+
+    # parse JSON from the script tag with id __NEXT_DATA__:
+    # product_data = await tab.execute_script('return JSON.parse(document.querySelector("script#__NEXT_DATA__").innerText).props.pageProps.product', return_by_value=True)
+    # can also interrogate the global __NEXT_DATA__ object:
+    product_data = await tab.execute_script('return window.__NEXT_DATA__.props.pageProps.product', return_by_value=True)
+
+    if "value" not in product_data['result']['result']:
+        return {}
+
+    return product_data['result']['result']['value']
 
 async def scrape_url(url: str) -> None:
     print(f"> {url=}")
@@ -40,31 +54,26 @@ async def scrape_url(url: str) -> None:
             data = WoolworthsProduct(api_data['Product'])
             display_product(data)
         else:
-            data_list = await monitor_api_calls(tab, url, "fubardle") # Use a non-matching regex to skip API capture for Coles and IGA
             await tab.go_to(url)
-            await asyncio.sleep(5)
 
-            product_data = await tab.execute_script('return window.__NEXT_DATA__.props.pageProps.product', return_by_value=True)
-
-            if "value" not in product_data['result']['result']:
+            product_data = await get_next_product_data(tab)
+            if not product_data:
                 print("> No product data found in the page.")
                 return
 
-            product_data_result_value = product_data['result']['result']['value']
-
-            json_data = json.dumps(product_data_result_value, indent=2)
+            # json_data = json.dumps(product_data, indent=2)
             # print(f"Captured JSON: {json_data}")
 
             if "chemistwarehouse" in url:
-                data = ChemistWarehouseProduct(product_data_result_value)
+                data = ChemistWarehouseProduct(product_data)
                 display_product(data)
 
             if "coles" in url:
-                data = ColesProduct(product_data_result_value)
+                data = ColesProduct(product_data)
                 display_product(data)
 
             if "igashop" in url:
-                data = IgaProduct(product_data_result_value)
+                data = IgaProduct(product_data)
                 display_product(data)
 
         await asyncio.sleep(5)
