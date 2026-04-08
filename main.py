@@ -3,7 +3,7 @@ import tldextract
 from dataclasses import dataclass
 
 import parsers
-from data import PRODUCT_DATA
+from data import PRODUCTS, MERCHANTS
 from scrape import scrape_merchant_product
 
 @dataclass
@@ -27,13 +27,14 @@ def get_parser_for_url(url: str) -> None | callable:
     return parser
 
 def get_api_path_for_url(url: str) -> None | str:
-    ext = tldextract.extract(url)
-    domain = ext.domain
-    match domain:
-        case "woolworths":
-            return '/apis/ui/product/detail/'
-        case _:
-            return None
+    """Determine API path based on Merchant base URL"""
+
+    # Each merchant has a base URL and an optional API path defined in MERCHANTS data
+    # If the URL matches a merchant's base URL, return the corresponding API path
+    merchant = next((m for m in MERCHANTS if url.startswith(m['base_url'])), None)
+    if merchant:
+        return merchant['api_path']
+    return None
 
 async def process_product(product: Product) -> None:
     print(f"Product: {product['name']}")
@@ -52,7 +53,7 @@ async def process_products(product_list: list[Product]) -> None:
         await process_product(product)
 
 async def main():
-    await process_products(PRODUCT_DATA)
+    await process_products(PRODUCTS)
 
 if __name__ == "__main__":
     asyncio.run(main())
