@@ -1,24 +1,9 @@
 import json
-import tldextract
 from pydoll.browser.tab import Tab
 from pydoll.browser.chromium import Chrome
 from pydoll.browser.options import ChromiumOptions
 
-import parsers
 from monitor_apis import monitor_api_calls
-
-def get_parser_for_domain(domain: str):
-    parser_module = getattr(parsers, domain, None)
-    if parser_module is None:
-        print(f"> No parser found for domain: {domain}")
-        return None
-
-    parser = getattr(parser_module, "parse_product", None)
-    if parser is None:
-        print(f"> No parse_product function found in parser for domain: {domain}")
-        return None
-
-    return parser
 
 async def get_next_product_data(tab: Tab) -> dict:
     """Extract product data from __NEXT_DATA__ page props"""
@@ -33,31 +18,21 @@ async def get_next_product_data(tab: Tab) -> dict:
 
     return product_data['result']['result']['value']
 
-async def scrape_url(url: str) -> None:
+async def scrape_merchant_product(url: str, api_path: str | None) -> None | dict:
     print(f"> url: {url}")
-
-    ext = tldextract.extract(url)
-    domain = ext.domain
-    print(f"> domain: {domain}")
-
-    parser = get_parser_for_domain(domain)
-    if parser is None:
-        print(f"> No parser found for domain: {domain}")
-        return
 
     #  https://pydoll.tech/docs/features/configuration/browser-options/?h=chromium
     options = ChromiumOptions()
     async with Chrome(options=options) as browser:
         tab = await browser.start()
 
-        if domain == "woolworths":
-            api_path = '/apis/ui/product/detail/'
+        if api_path:
             data_list = await monitor_api_calls(tab, url, api_path)
             await tab.go_to(url)
             # get first item in data_list and parse JSON
             if not data_list:
                 print("> No API calls captured.")
-                return
+                return None
 
             item = data_list[0]
             json_data = item['body']
@@ -70,10 +45,9 @@ async def scrape_url(url: str) -> None:
             product_data = await get_next_product_data(tab)
             if not product_data:
                 print("> No product data found in the page.")
-                return
+                return None
 
         # json_data = json.dumps(product_data, indent=2)
         # print(f"Captured JSON: {json_data}")
 
-        data = parser(product_data)
-        data.display_product()
+        return product_data
