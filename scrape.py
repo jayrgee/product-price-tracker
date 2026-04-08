@@ -1,21 +1,11 @@
-import asyncio
 import json
+import tldextract
 from pydoll.browser.tab import Tab
 from pydoll.browser.chromium import Chrome
 from pydoll.browser.options import ChromiumOptions
 
-from model import ChemistWarehouseProduct, ColesProduct, IgaProduct, MerchantProduct, WoolworthsProduct
+from parsers import parse_chemist_warehouse_product, parse_coles_product, parse_iga_product, parse_woolworths_product
 from monitor_apis import monitor_api_calls
-
-def display_product(product: MerchantProduct) -> None:
-    print(f"Merchant: {product.merchant}")
-    print(f"Name: {product.name}")
-    print(f"Brand: {product.brand}")
-    print(f"Price: {product.price}")
-    if product.was_price:
-        print(f"Was Price: {product.was_price}")
-    if product.price_label:
-        print(f"Price Label: {product.price_label}")
 
 async def get_next_product_data(tab: Tab) -> dict:
     """Extract product data from __NEXT_DATA__ page props"""
@@ -33,12 +23,16 @@ async def get_next_product_data(tab: Tab) -> dict:
 async def scrape_url(url: str) -> None:
     print(f"> {url=}")
 
+    ext = tldextract.extract(url)
+    domain = ext.domain
+    print(f"> domain: {domain}")
+
     #  https://pydoll.tech/docs/features/configuration/browser-options/?h=chromium
     options = ChromiumOptions()
     async with Chrome(options=options) as browser:
         tab = await browser.start()
 
-        if "woolworths" in url:
+        if domain == "woolworths":
             api_path = '/apis/ui/product/detail/'
             data_list = await monitor_api_calls(tab, url, api_path)
             await tab.go_to(url)
@@ -51,8 +45,7 @@ async def scrape_url(url: str) -> None:
             json_data = item['body']
             # Parse JSON
             api_data = json.loads(json_data)
-            data = WoolworthsProduct(api_data['Product'])
-            display_product(data)
+            product_data = api_data['Product']
         else:
             await tab.go_to(url)
 
@@ -61,19 +54,20 @@ async def scrape_url(url: str) -> None:
                 print("> No product data found in the page.")
                 return
 
-            # json_data = json.dumps(product_data, indent=2)
-            # print(f"Captured JSON: {json_data}")
+        # json_data = json.dumps(product_data, indent=2)
+        # print(f"Captured JSON: {json_data}")
 
-            if "chemistwarehouse" in url:
-                data = ChemistWarehouseProduct(product_data)
-                display_product(data)
+        match domain:
+            case "chemistwarehouse":
+                data = parse_chemist_warehouse_product(product_data)
+            case "coles":
+                data = parse_coles_product(product_data)
+            case "igashop":
+                data = parse_iga_product(product_data)
+            case "woolworths":
+                data = parse_woolworths_product(product_data)
+            case _:
+                print(f"> No parser available for domain: {domain}")
+                return
 
-            if "coles" in url:
-                data = ColesProduct(product_data)
-                display_product(data)
-
-            if "igashop" in url:
-                data = IgaProduct(product_data)
-                display_product(data)
-
-        await asyncio.sleep(5)
+        data.display_product()
