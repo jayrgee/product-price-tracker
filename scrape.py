@@ -5,6 +5,7 @@ from pydoll.browser.options import ChromiumOptions
 from pydoll.constants import PageLoadState
 
 from monitor_apis import monitor_api_calls
+from stealth import set_headless, set_quick_stealth
 
 
 async def get_next_product_data(tab: Tab) -> dict:
@@ -32,14 +33,10 @@ async def scrape_merchant_product(
     #  https://pydoll.tech/docs/features/configuration/browser-options/?h=chromium
     options = ChromiumOptions()
     if headless:
-        options.headless = True
-        options.add_argument("--headless=new")  # More realistic headless mode
-        options.add_argument("--enable-webgl")  # Bypasses hardware-check flags
-        options.add_argument(
-            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
-        )
+        set_headless(options)
 
     if api_path:
+        set_quick_stealth(options=options)
         options.page_load_state = PageLoadState.COMPLETE # Wait for full page load to capture API calls
     else:
         options.page_load_state = PageLoadState.INTERACTIVE # Only require DOM access

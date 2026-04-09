@@ -1,3 +1,4 @@
+import asyncio
 import re
 from functools import partial
 from pydoll.browser.tab import Tab
@@ -70,5 +71,6 @@ async def monitor_api_calls(tab: Tab, url: str, api_path: str) -> list[dict]:
 
     # Navigate to url
     await tab.go_to(url)
+    await asyncio.sleep(5)  # Wait for API calls to complete
 
     return collected_data
