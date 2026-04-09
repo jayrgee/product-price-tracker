@@ -1,4 +1,4 @@
-PRODUCT_DATA = [
+PRODUCTS = [
     {
         "name": "Twinings Irish Breakfast Tea Bags 100 pack",
         "urls": [
@@ -9,3 +9,25 @@ PRODUCT_DATA = [
     }
 ]
 
+MERCHANTS = [
+    {
+        "name": "Chemist Warehouse",
+        "base_url": "https://www.chemistwarehouse.com.au/",
+        "api_path": None
+    },
+    {
+        "name": "Coles",
+        "base_url": "https://www.coles.com.au/",
+        "api_path": None
+    },
+    {
+        "name": "IGA",
+        "base_url": "https://www.igashop.com.au/",
+        "api_path": None
+    },
+    {
+        "name": "Woolworths",
+        "base_url": "https://www.woolworths.com.au/",
+        "api_path": "/apis/ui/product/detail/"
+    }
+]

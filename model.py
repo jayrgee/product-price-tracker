@@ -13,11 +13,11 @@ class MerchantProduct:
     price_label: str = ""
 
     def display_product(self) -> None:
-        print(f"Merchant: {self.merchant}")
-        print(f"Name: {self.name}")
-        print(f"Brand: {self.brand}")
-        print(f"Price: {self.price}")
+        print(f"- Merchant: {self.merchant}")
+        print(f"- Name: {self.name}")
+        print(f"- Brand: {self.brand}")
+        print(f"- Price: {self.price}")
         if self.was_price:
-            print(f"Was Price: {self.was_price}")
+            print(f"- Was Price: {self.was_price}")
         if self.price_label:
-            print(f"Price Label: {self.price_label}")
+            print(f"- Price Label: {self.price_label}")
