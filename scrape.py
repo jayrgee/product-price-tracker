@@ -2,23 +2,31 @@ import json
 from pydoll.browser.tab import Tab
 from pydoll.browser.chromium import Chrome
 from pydoll.browser.options import ChromiumOptions
+from pydoll.constants import PageLoadState
 
 from monitor_apis import monitor_api_calls
+
 
 async def get_next_product_data(tab: Tab) -> dict:
     """Extract product data from __NEXT_DATA__ page props"""
 
-    # parse JSON from the script tag with id __NEXT_DATA__:
-    # product_data = await tab.execute_script('return JSON.parse(document.querySelector("script#__NEXT_DATA__").innerText).props.pageProps.product', return_by_value=True)
+    # parse JSON from the DOM script tag with id "__NEXT_DATA__":
+    product_data = await tab.execute_script(
+        'return JSON.parse(document.querySelector("script#__NEXT_DATA__").innerText).props.pageProps.product',
+        return_by_value=True,
+    )
     # can also interrogate the global __NEXT_DATA__ object:
-    product_data = await tab.execute_script('return window.__NEXT_DATA__.props.pageProps.product', return_by_value=True)
+    # product_data = await tab.execute_script('return window.__NEXT_DATA__.props.pageProps.product', return_by_value=True)
 
-    if "value" not in product_data['result']['result']:
+    if "value" not in product_data["result"]["result"]:
         return {}
 
-    return product_data['result']['result']['value']
+    return product_data["result"]["result"]["value"]
 
-async def scrape_merchant_product(url: str, api_path: str | None, headless: bool = False) -> None | dict:
+
+async def scrape_merchant_product(
+    url: str, api_path: str | None, headless: bool = False
+) -> None | dict:
     print(f"> url: {url}")
 
     #  https://pydoll.tech/docs/features/configuration/browser-options/?h=chromium
@@ -26,8 +34,15 @@ async def scrape_merchant_product(url: str, api_path: str | None, headless: bool
     if headless:
         options.headless = True
         options.add_argument("--headless=new")  # More realistic headless mode
-        options.add_argument("--enable-webgl")   # Bypasses hardware-check flags
-        options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36")
+        options.add_argument("--enable-webgl")  # Bypasses hardware-check flags
+        options.add_argument(
+            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+        )
+
+    if api_path:
+        options.page_load_state = PageLoadState.COMPLETE # Wait for full page load to capture API calls
+    else:
+        options.page_load_state = PageLoadState.INTERACTIVE # Only require DOM access
 
     async with Chrome(options=options) as browser:
         tab = await browser.start()
@@ -40,10 +55,10 @@ async def scrape_merchant_product(url: str, api_path: str | None, headless: bool
 
             # get first item in data_list and parse JSON
             item = data_list[0]
-            json_data = item['body']
+            json_data = item["body"]
             # Parse JSON
             api_data = json.loads(json_data)
-            product_data = api_data['Product']
+            product_data = api_data["Product"]
         else:
             await tab.go_to(url)
 
