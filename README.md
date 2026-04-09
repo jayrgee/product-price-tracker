@@ -31,8 +31,18 @@ This project scrapes product pages and APIs from major Australian retailers (mer
 4. **Run the Project**:
    Call `uv run` to  execute the project's entry point:
    ```bash
+   # run project
    uv run main.py
+
+   # run project in headless mode
+   uv run main.py --headless
    ```
 
 5. **Linting**
-   
+   ```bash
+   # Format code with ruff
+   uv run ruff format .
+
+   # Run linting with automated fixes
+   uv run ruff check --fix .
+   ```
