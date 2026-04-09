@@ -1,4 +1,5 @@
 import asyncio
+import sys
 import tldextract
 from dataclasses import dataclass
 
@@ -36,7 +37,7 @@ def get_api_path_for_url(url: str) -> None | str:
         return merchant['api_path']
     return None
 
-async def process_product(product: Product) -> None:
+async def process_product(product: Product, headless: bool = False) -> None:
     print(f"Product: {product['name']}")
     for url in product["urls"]:
         parser = get_parser_for_url(url)
@@ -44,16 +45,23 @@ async def process_product(product: Product) -> None:
             print(f"> No parser found for url: {url}")
             return
         api_path = get_api_path_for_url(url)
-        product_data = await scrape_merchant_product(url, api_path)
+        product_data = await scrape_merchant_product(url, api_path, headless)
+        if product_data is None:
+            print(f"> No product data found for url: {url}")
+            continue
+
         data = parser(product_data)
         data.display_product()
 
-async def process_products(product_list: list[Product]) -> None:
+async def process_products(product_list: list[Product], headless: bool = False) -> None:
     for product in product_list:
-        await process_product(product)
+        await process_product(product, headless)
 
-async def main():
-    await process_products(PRODUCTS)
+async def main(headless: bool = False) -> None:
+    await process_products(PRODUCTS, headless)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    args = sys.argv[1:]
+    print(f"Arguments: {args}")
+    headless = True if "--headless" in args else False
+    asyncio.run(main(headless))
