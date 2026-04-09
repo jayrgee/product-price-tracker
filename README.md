@@ -4,21 +4,15 @@ A Python project designed to track and normalize product pricing data from vario
 
 ## Description
 
-This project scrapes product pages and APIs from major Australian retailers to extract key pricing information. Because each retailer has a unique web or API response structure, the application maps raw data into a common model to make price comparison uniform and straightforward.
+This project scrapes product pages and APIs from major Australian retailers (merchants) to extract key pricing information. Because each retailer has a unique web or API response structure, the application parses raw data into a common `MerchantProduct` using a `parse_product` parser function to make price comparison uniform and straightforward.
 
-The tracking models pull standard details such as:
+`MerchantProduct` contains standard details such as:
 - **Merchant:** Retailer name (e.g., Coles, Woolworths, IGA)
 - **Name:** The product's clear name
 - **Brand:** The product's brand
 - **Price:** The current price
 - **Was Price:** The previous price (if the item is currently on special)
 - **Price Label:** Any specific pricing label or condition (e.g., "On Special")
-
-## Structure
-- main.py: Asynchronous entry point that processes a predefined list of products.
-- model.py: Normalization classes (`ColesProduct`, `WoolworthsProduct`, etc.) mapped to a base `MerchantProduct` class.
-- scrape.py: Logic to request and scrape from target URLs.
-- data.py: Predefined product dataset URLs to monitor.
 
 ## Installation
 
@@ -39,3 +33,6 @@ The tracking models pull standard details such as:
    ```bash
    uv run main.py
    ```
+
+5. **Linting**
+   

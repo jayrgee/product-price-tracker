@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Debug Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "uv",
+      "pythonArgs": ["run", "python"],
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "args": []
+    }
+  ]
+}

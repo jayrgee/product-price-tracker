@@ -43,7 +43,8 @@ async def process_product(product: Product, headless: bool = False) -> None:
         parser = get_parser_for_url(url)
         if parser is None:
             print(f"> No parser found for url: {url}")
-            return
+            continue
+
         api_path = get_api_path_for_url(url)
         product_data = await scrape_merchant_product(url, api_path, headless)
         if product_data is None:
