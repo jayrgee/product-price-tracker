@@ -43,10 +43,10 @@ def set_quick_stealth(options: ChromiumOptions) -> None:
 
     # https://pydoll.tech/docs/features/configuration/browser-options/#stealth-fingerprinting
     # Make your automation harder to detect with these command-line arguments:
-    options.add_argument("--disable-blink-features=AutomationControlled")  # Hide automation flag
+    # options.add_argument("--disable-blink-features=AutomationControlled")  # Hide automation flag
     options.add_argument("--use-gl=swiftshader")  # Use software rendering to bypass hardware checks
-    options.add_argument("--force-webrtc-ip-handling-policy=disable_non_proxied_udp")  # Prevent WebRTC IP leaks
+    options.webrtc_leak_protection = True  # Prevents real IP exposure through WebRTC
+    # options.add_argument("--force-webrtc-ip-handling-policy=disable_non_proxied_udp")  # Prevent WebRTC IP leaks
     # options.add_argument("--no-first-run")  # Skip first run experience
     # options.add_argument("--no-default-browser-check")  # Skip default browser check
     options.add_argument("--disable-reading-from-canvas")  # Disable canvas fingerprinting
-
