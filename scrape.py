@@ -6,30 +6,14 @@ from pydoll.browser.options import ChromiumOptions
 from pydoll.constants import PageLoadState
 
 from monitor_apis import monitor_api_calls
+from nextjs_data import get_nextjs_page_data
 from stealth import set_headless, set_quick_stealth
 
-
-async def get_next_product_data(tab: Tab) -> dict:
-    """Extract product data from __NEXT_DATA__ page props"""
-
-    # parse JSON from the DOM script tag with id "__NEXT_DATA__":
-    product_data = await tab.execute_script(
-        'return JSON.parse(document.querySelector("script#__NEXT_DATA__").innerText).props.pageProps.product',
-        return_by_value=True,
-    )
-    # can also interrogate the global __NEXT_DATA__ object:
-    # product_data = await tab.execute_script('return window.__NEXT_DATA__.props.pageProps.product', return_by_value=True)
-
-    if "value" not in product_data["result"]["result"]:
-        return {}
-
-    return product_data["result"]["result"]["value"]
 
 def get_chromium_options(is_headless: bool, is_api: bool) -> ChromiumOptions:
 
     #  https://pydoll.tech/docs/features/configuration/browser-options/?h=chromium
     options = ChromiumOptions()
-    # options.add_argument('--incognito')  # Open in incognito mode
     if is_headless:
         set_headless(options)
 
@@ -41,11 +25,14 @@ def get_chromium_options(is_headless: bool, is_api: bool) -> ChromiumOptions:
 
     return options
 
+
 async def _scrape_api(tab: Tab, url: str, api_path: str) -> list[dict]:
     pass
 
+
 async def _srape_dom(tab: Tab, url: str) -> dict:
     pass
+
 
 async def scrape_merchant_product(
     url: str, api_path: str | None, headless: bool = False
@@ -73,7 +60,12 @@ async def scrape_merchant_product(
             await tab.go_to(url)
             await asyncio.sleep(5)
 
-            product_data = await get_next_product_data(tab)
+            page_data = await get_nextjs_page_data(tab)
+            if not page_data:
+                print("> No nextjs page data found in the page")
+                return None
+
+            product_data = page_data.get("product", {})
             if not product_data:
                 print("> No product data found in the page.")
                 return None
