@@ -13,21 +13,25 @@ MERCHANTS = [
     {
         "name": "Chemist Warehouse",
         "base_url": "https://www.chemistwarehouse.com.au/",
-        "api_path": None
+        "api_path": None,
+        "data_list": ["product"]
     },
     {
         "name": "Coles",
         "base_url": "https://www.coles.com.au/",
-        "api_path": None
+        "api_path": None,
+        "data_list": ["product"]
     },
     {
         "name": "IGA",
         "base_url": "https://www.igashop.com.au/",
-        "api_path": None
+        "api_path": None,
+        "data_list": ["product"]
     },
     {
         "name": "Woolworths",
         "base_url": "https://www.woolworths.com.au/",
-        "api_path": "/apis/ui/product/detail/"
+        "api_path": "/apis/ui/product/detail/",
+        "data_list": ["Product"]
     }
 ]

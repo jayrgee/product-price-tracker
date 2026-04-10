@@ -38,6 +38,19 @@ def get_api_path_for_url(url: str) -> None | str:
         return merchant['api_path']
     return None
 
+def get_options_for_url(url: str) -> dict | None:
+    """Determine scraping options based on Merchant base URL"""
+
+    # Each merchant has a base URL and an optional API path defined in MERCHANTS data
+    # If the URL matches a merchant's base URL, return the corresponding options
+    merchant = next((m for m in MERCHANTS if url.startswith(m['base_url'])), None)
+    if merchant:
+        return {
+            "api_path": merchant.get("api_path", None),
+            "data_list": merchant.get("data_list", None)
+        }
+    return {"api_path": None, "data_list": None}
+
 async def process_product(product: Product, headless: bool = False) -> None:
     print(f"Product: {product['name']}")
     for url in product["urls"]:
@@ -46,8 +59,9 @@ async def process_product(product: Product, headless: bool = False) -> None:
             print(f"> No parser found for url: {url}")
             continue
 
-        api_path = get_api_path_for_url(url)
-        product_data = await scrape_merchant_product(url, api_path, headless)
+        options = get_options_for_url(url)
+        options["is_headless"] = headless
+        product_data = await scrape_merchant_product(url, options)
         if product_data is None:
             print(f"> No product data found for url: {url}")
             continue
