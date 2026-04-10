@@ -3,6 +3,7 @@ import sys
 import tldextract
 from dataclasses import dataclass
 
+import constants
 import parsers
 from data import PRODUCTS, MERCHANTS
 from scrape import scrape_merchant_product
@@ -20,9 +21,9 @@ def get_parser_for_url(url: str) -> None | callable:
         print(f"> No parser found for domain: {domain}")
         return None
 
-    parser = getattr(parser_module, "parse_product", None)
+    parser = getattr(parser_module, constants.PARSE_FUNCTION_NAME, None)
     if parser is None:
-        print(f"> No parse_product function found in parser for domain: {domain}")
+        print(f"> No '{constants.PARSE_FUNCTION_NAME}' function found in parser for domain: {domain}")
         return None
 
     return parser
