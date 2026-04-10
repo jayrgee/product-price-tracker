@@ -9,14 +9,14 @@ from pydoll.protocol.network.events import (
 )
 from pydoll.protocol.network.types import ResourceType
 
-api_resource_types = [ResourceType.FETCH, ResourceType.XHR]
+API_RESOURCE_TYPES = [ResourceType.FETCH, ResourceType.XHR]
 
 async def log_api_request(api_path_regex: str, event: RequestWillBeSentEvent) -> None:
     params = event["params"]
     resource_type = params["type"]
     url = params["request"]["url"]
 
-    if resource_type not in api_resource_types:
+    if resource_type not in API_RESOURCE_TYPES:
         return
 
     # Filter only API path calls
@@ -34,7 +34,7 @@ async def capture_api_response(
     resource_type = params["type"]
     url = params["response"]["url"]
 
-    if resource_type not in api_resource_types:
+    if resource_type not in API_RESOURCE_TYPES:
         return
 
     # Filter only API path calls
