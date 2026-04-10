@@ -2,12 +2,12 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: Debug Current File",
+      "name": "Python: Debug Main",
       "type": "debugpy",
       "request": "launch",
       "python": "uv",
       "pythonArgs": ["run", "python"],
-      "program": "${file}",
+      "program": "main.py",
       "console": "integratedTerminal",
       "args": []
     }
