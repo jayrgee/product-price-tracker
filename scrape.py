@@ -34,6 +34,22 @@ async def _srape_dom(tab: Tab, url: str) -> dict:
     pass
 
 
+def _get_data_by_key(data: dict, key: str) -> dict:
+    if key in data:
+        return data[key]
+    else:
+        print(f"> Warning: Key '{key}' not found in the data.")
+        return {}
+
+def _get_required_data(data: dict, data_list: list[str]) -> dict:
+    if len(data_list) == 1 and data_list[0] in data:
+        return _get_data_by_key(data, data_list[0])
+
+    result = {}
+    for key in data_list:
+        result[key] = _get_data_by_key(data, key)
+    return result
+
 async def scrape_merchant_product(url: str, options: dict) -> None | dict:
     print(f"> url: {url}")
     api_path = options.get("api_path", None)
@@ -56,7 +72,7 @@ async def scrape_merchant_product(url: str, options: dict) -> None | dict:
             json_data = item["body"]
             # Parse JSON
             api_data = json.loads(json_data)
-            product_data = api_data.get(data_list[0], {})
+            product_data = _get_required_data(api_data, data_list)
         else:
             await tab.go_to(url)
             await asyncio.sleep(5)
@@ -66,7 +82,7 @@ async def scrape_merchant_product(url: str, options: dict) -> None | dict:
                 print("> No nextjs page data found in the page")
                 return None
 
-            product_data = page_data.get(data_list[0], {})
+            product_data = _get_required_data(page_data, data_list)
             if not product_data:
                 print("> No product data found in the page.")
                 return None
