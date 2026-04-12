@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import re
 from functools import partial
 from pydoll.browser.tab import Tab
@@ -8,6 +9,8 @@ from pydoll.protocol.network.events import (
     RequestWillBeSentEvent,
 )
 from pydoll.protocol.network.types import ResourceType
+
+logger = logging.getLogger(__name__)
 
 API_RESOURCE_TYPES = [ResourceType.FETCH, ResourceType.XHR]
 
@@ -24,7 +27,7 @@ async def log_api_request(api_path_regex: str, event: RequestWillBeSentEvent) ->
         return
 
     request_id = params["requestId"]
-    print(f"> {resource_type} Request: {request_id} : {url}")
+    logger.info(f"> {resource_type} Request: {request_id} : {url}")
 
 
 async def capture_api_response(
@@ -44,12 +47,12 @@ async def capture_api_response(
     request_id = params["requestId"]
     status = params["response"]["status"]
 
-    print(f"< {resource_type} Response: {request_id} : {status} : {url}")
+    logger.info(f"< {resource_type} Response: {request_id} : {status} : {url}")
 
     try:
         body = await tab.get_network_response_body(request_id)
     except Exception as e:
-        print(f"Failed to get response body: {e}")
+        logger.error(f"Failed to get response body: {e}")
         return
 
     data_list.append({"url": url, "body": body, "status": status})

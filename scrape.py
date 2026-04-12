@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from pydoll.browser.tab import Tab
 from pydoll.browser.chromium import Chrome
 from pydoll.browser.options import ChromiumOptions
@@ -8,6 +9,8 @@ from pydoll.constants import PageLoadState
 from monitor_apis import monitor_api_calls
 from nextjs_data import get_nextjs_page_data
 from stealth import set_headless, set_quick_stealth
+
+logger = logging.getLogger(__name__)
 
 
 def get_chromium_options(is_headless: bool, is_api: bool) -> ChromiumOptions:
@@ -38,7 +41,7 @@ def _get_data_by_key(data: dict, key: str) -> dict:
     if key in data:
         return data[key]
     else:
-        print(f"> Warning: Key '{key}' not found in the data.")
+        logger.warning(f"Key '{key}' not found in the data.")
         return {}
 
 def _get_required_data(data: dict, data_list: list[str]) -> dict:
@@ -51,7 +54,7 @@ def _get_required_data(data: dict, data_list: list[str]) -> dict:
     return result
 
 async def scrape_merchant_product(url: str, options: dict) -> None | dict:
-    print(f"> url: {url}")
+    logger.info(f"url: {url}")
     api_path = options.get("api_path", None)
     is_headless = options.get("is_headless", False)
     data_list = options.get("data_list", None)
@@ -64,7 +67,7 @@ async def scrape_merchant_product(url: str, options: dict) -> None | dict:
             capture_list = await monitor_api_calls(tab, url, api_path)
 
             if not capture_list:
-                print("> No API calls captured.")
+                logger.warning("No API calls captured.")
                 return None
 
             # get first item in capture_list and parse JSON
@@ -79,12 +82,12 @@ async def scrape_merchant_product(url: str, options: dict) -> None | dict:
 
             page_data = await get_nextjs_page_data(tab)
             if not page_data:
-                print("> No nextjs page data found in the page")
+                logger.warning("No nextjs page data found in the page")
                 return None
 
             product_data = _get_required_data(page_data, data_list)
             if not product_data:
-                print("> No product data found in the page.")
+                logger.warning("No product data found in the page.")
                 return None
 
         # json_data = json.dumps(product_data, indent=2)

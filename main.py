@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import sys
 import tldextract
 from dataclasses import dataclass
@@ -13,17 +14,21 @@ class Product:
     name: str
     urls: list[str]
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
+
+
 def get_parser_for_url(url: str) -> None | callable:
     ext = tldextract.extract(url)
     domain = ext.domain
     parser_module = getattr(parsers, domain, None)
     if parser_module is None:
-        print(f"> No parser found for domain: {domain}")
+        logger.warning(f"> No parser found for domain: {domain}")
         return None
 
     parser = getattr(parser_module, constants.PARSE_FUNCTION_NAME, None)
     if parser is None:
-        print(f"> No '{constants.PARSE_FUNCTION_NAME}' function found in parser for domain: {domain}")
+        logger.warning(f"> No '{constants.PARSE_FUNCTION_NAME}' function found in parser for domain: {domain}")
         return None
 
     return parser
@@ -52,18 +57,18 @@ def get_options_for_url(url: str) -> dict | None:
     return {"api_path": None, "data_list": None}
 
 async def process_product(product: Product, headless: bool = False) -> None:
-    print(f"Product: {product['name']}")
+    logger.info(f"Product: {product['name']}")
     for url in product["urls"]:
         parser = get_parser_for_url(url)
         if parser is None:
-            print(f"> No parser found for url: {url}")
+            logger.warning(f"> No parser found for url: {url}")
             continue
 
         options = get_options_for_url(url)
         options["is_headless"] = headless
         product_data = await scrape_merchant_product(url, options)
         if product_data is None:
-            print(f"> No product data found for url: {url}")
+            logger.warning(f"> No product data found for url: {url}")
             continue
 
         data = parser(product_data)
@@ -78,6 +83,6 @@ async def main(headless: bool = False) -> None:
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    print(f"Arguments: {args}")
+    logger.info(f"Arguments: {args}")
     headless = True if "--headless" in args else False
     asyncio.run(main(headless))
