@@ -6,7 +6,7 @@ def _extract_cdp_value(response):
         return response.get('result', {}).get('result', {}).get('value', '')
     return response
 
-async def get_nextjs_page_data(tab: Tab) -> dict:
+async def get_nextjs_page_data(tab: Tab, getGlobal: bool = True) -> dict:
     """Gets data from global __NEXT_DATA__ page props object"""
 
     # NextJS apps often embed page data in a script element with id "__NEXT_DATA__".
@@ -14,13 +14,31 @@ async def get_nextjs_page_data(tab: Tab) -> dict:
     # On initialization, this data is available in the global window.__NEXT_DATA__ variable.
     # By executing JavaScript in the page context, we can extract this data without needing to monitor API calls.
     # The following code uses an Immediately Invoked Function Expression (IIFE) to safely access the JSON data:
-    js_iife = """
-        (() => {
-            const nextData = window.__NEXT_DATA__;
-            if (!nextData || !nextData.props || !nextData.props.pageProps) { return {}; }
-            return nextData.props.pageProps;
-        })()
-        """
+
+    if getGlobal:
+        js_iife = """
+            (() => {
+                const nextData = window.__NEXT_DATA__;
+                if (!nextData || !nextData.props || !nextData.props.pageProps) { return {}; }
+                return nextData.props.pageProps;
+            })()
+            """
+    else:
+        js_iife = """
+            (() => {
+                const nextDataElement = document.getElementById('__NEXT_DATA__');
+                let nextData;
+                if (nextDataElement) {
+                    try {
+                        nextData = JSON.parse(nextDataElement.textContent);
+                    } catch (e) {
+                        return {};
+                    }
+                }
+                if (!nextData || !nextData.props || !nextData.props.pageProps) { return {}; }
+                return nextData.props.pageProps;
+            })()
+            """
     cdp_response = await tab.execute_script(js_iife, return_by_value=True) # returns a CDP response object
     page_data = _extract_cdp_value(cdp_response)
 
