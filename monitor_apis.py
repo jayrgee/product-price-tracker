@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 API_RESOURCE_TYPES = [ResourceType.FETCH, ResourceType.XHR]
 
-async def log_api_request(api_path_regex: str, event: RequestWillBeSentEvent) -> None:
+async def log_api_request(api_regex_paths: list[str], event: RequestWillBeSentEvent) -> None:
     params = event["params"]
     resource_type = params["type"]
     url = params["request"]["url"]
@@ -23,7 +23,8 @@ async def log_api_request(api_path_regex: str, event: RequestWillBeSentEvent) ->
         return
 
     # Filter only API path calls
-    if not re.search(api_path_regex, url):
+    # if none of the api_paths match the url, return
+    if not any(re.search(api_regex, url) for api_regex in api_regex_paths):
         return
 
     request_id = params["requestId"]
@@ -31,7 +32,7 @@ async def log_api_request(api_path_regex: str, event: RequestWillBeSentEvent) ->
 
 
 async def capture_api_response(
-    tab: Tab, api_path_regex: str, data_list: list, event: ResponseReceivedEvent
+    tab: Tab, api_regex_paths: list[str], data_list: list, event: ResponseReceivedEvent
 ) -> None:
     params = event["params"]
     resource_type = params["type"]
@@ -41,7 +42,8 @@ async def capture_api_response(
         return
 
     # Filter only API path calls
-    if not re.search(api_path_regex, url):
+    # if none of the api_paths match the url, return
+    if not any(re.search(api_regex, url) for api_regex in api_regex_paths):
         return
 
     request_id = params["requestId"]
@@ -60,16 +62,19 @@ async def capture_api_response(
     await tab.disable_network_events()
 
 
-async def monitor_api_calls(tab: Tab, url: str, api_path: str) -> list[dict]:
+async def monitor_api_calls(tab: Tab, url: str, api_paths: list[str]) -> list[dict]:
     collected_data = []
 
     await tab.enable_network_events()
+    # Set up listeners for API calls matching any of the specified API paths
+    # for api_path in api_paths:
     await tab.on(
         NetworkEvent.REQUEST_WILL_BE_SENT,
-        partial(log_api_request, api_path))
+        partial(log_api_request, api_paths)
+    )
     await tab.on(
         NetworkEvent.RESPONSE_RECEIVED,
-        partial(capture_api_response, tab, api_path, collected_data),
+        partial(capture_api_response, tab, api_paths, collected_data),
     )
 
     # Navigate to url

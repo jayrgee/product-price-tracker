@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Callable
 import json
 import logging
 from pydoll.browser.tab import Tab
@@ -44,27 +45,40 @@ def _get_data_by_key(data: dict, key: str) -> dict:
         logger.warning(f"Key '{key}' not found in the data.")
         return {}
 
-def _get_required_data(data: dict, data_list: list[str]) -> dict:
-    if len(data_list) == 1 and data_list[0] in data:
-        return _get_data_by_key(data, data_list[0])
+def _get_required_data(data: dict, data_filter: list[str]) -> dict:
+    if not data_filter:
+        return data
+
+    if len(data_filter) == 1:
+        key = data_filter[0]
+        return _get_data_by_key(data, key)
 
     result = {}
-    for key in data_list:
+    for key in data_filter:
         result[key] = _get_data_by_key(data, key)
     return result
 
-async def scrape_merchant_product(url: str, options: dict) -> None | dict:
+async def scrape_merchant_product(url: str, options: dict, set_location_fn: Callable | None) -> None | dict:
+
     logger.info(f"url: {url}")
     api_path = options.get("api_path", None)
     is_headless = options.get("is_headless", False)
-    data_list = options.get("data_list", None)
+    data_filter = options.get("data_filter", None)
+    location_options = options.get("location", None)
+    base_url = options.get("base_url", None)
 
     chromiumOptions = get_chromium_options(is_headless=is_headless, is_api=bool(api_path))
     async with Chrome(options=chromiumOptions) as browser:
         tab = await browser.start()
 
+        if location_options and set_location_fn:
+            await tab.go_to(base_url)
+            await asyncio.sleep(5)
+
+            await set_location_fn(tab, location_options)
+
         if api_path:
-            capture_list = await monitor_api_calls(tab, url, api_path)
+            capture_list = await monitor_api_calls(tab, url, [api_path])
 
             if not capture_list:
                 logger.warning("No API calls captured.")
@@ -75,7 +89,7 @@ async def scrape_merchant_product(url: str, options: dict) -> None | dict:
             json_data = item["body"]
             # Parse JSON
             api_data = json.loads(json_data)
-            product_data = _get_required_data(api_data, data_list)
+            product_data = _get_required_data(api_data, data_filter)
         else:
             await tab.go_to(url)
             await asyncio.sleep(5)
@@ -85,7 +99,7 @@ async def scrape_merchant_product(url: str, options: dict) -> None | dict:
                 logger.warning("No nextjs page data found in the page")
                 return None
 
-            product_data = _get_required_data(page_data, data_list)
+            product_data = _get_required_data(page_data, data_filter)
             if not product_data:
                 logger.warning("No product data found in the page.")
                 return None

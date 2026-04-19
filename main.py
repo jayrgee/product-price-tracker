@@ -1,11 +1,12 @@
 import asyncio
+from collections.abc import Callable
 import logging
 import sys
 import tldextract
 from dataclasses import dataclass
 
 import constants
-import parsers
+import merchants
 from data import PRODUCTS, MERCHANTS
 from scrape import scrape_merchant_product
 
@@ -18,60 +19,68 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
 
 
-def get_parser_for_url(url: str) -> None | callable:
+def get_domain_from_url(url: str) -> str:
     ext = tldextract.extract(url)
-    domain = ext.domain
-    parser_module = getattr(parsers, domain, None)
-    if parser_module is None:
-        logger.warning(f"> No parser found for domain: {domain}")
+    return ext.domain
+
+def get_merchant_function(merchant_domain: str, function_name: str) -> None | Callable:
+    merchant_module = getattr(merchants, merchant_domain, None)
+    if merchant_module is None:
+        logger.warning(f"> No merchant module found for domain: {merchant_domain}")
         return None
 
-    parser = getattr(parser_module, constants.PARSE_FUNCTION_NAME, None)
-    if parser is None:
-        logger.warning(f"> No '{constants.PARSE_FUNCTION_NAME}' function found in parser for domain: {domain}")
+    fn: Callable | None = getattr(merchant_module, function_name, None)
+    if fn is None:
+        logger.warning(f"> No '{function_name}' function found in merchant module for domain: {merchant_domain}")
         return None
 
-    return parser
+    return fn
 
-def get_api_path_for_url(url: str) -> None | str:
-    """Determine API path based on Merchant base URL"""
+def get_merchant_for_url(url: str) -> dict | None:
+    """Determine merchant from URL"""
 
-    # Each merchant has a base URL and an optional API path defined in MERCHANTS data
-    # If the URL matches a merchant's base URL, return the corresponding API path
+    # Each merchant has a base URL defined in MERCHANTS data
+    # If the URL matches a merchant's base URL, return the corresponding merchant object
     merchant = next((m for m in MERCHANTS if url.startswith(m['base_url'])), None)
     if merchant:
-        return merchant['api_path']
+        return merchant
     return None
-
-def get_options_for_url(url: str) -> dict | None:
-    """Determine scraping options based on Merchant base URL"""
-
-    # Each merchant has a base URL and an optional API path defined in MERCHANTS data
-    # If the URL matches a merchant's base URL, return the corresponding options
-    merchant = next((m for m in MERCHANTS if url.startswith(m['base_url'])), None)
-    if merchant:
-        return {
-            "api_path": merchant.get("api_path", None),
-            "data_list": merchant.get("data_list", None)
-        }
-    return {"api_path": None, "data_list": None}
 
 async def process_product(product: Product, headless: bool = False) -> None:
     logger.info(f"Product: {product['name']}")
     for url in product["urls"]:
-        parser = get_parser_for_url(url)
-        if parser is None:
+        domain = get_domain_from_url(url)
+        parser_fn = get_merchant_function(domain, constants.PARSE_PRODUCT_FUNCTION_NAME)
+        if parser_fn is None:
             logger.warning(f"> No parser found for url: {url}")
             continue
 
-        options = get_options_for_url(url)
-        options["is_headless"] = headless
-        product_data = await scrape_merchant_product(url, options)
+        merchant = get_merchant_for_url(url)
+        if merchant is None:
+            logger.warning(f"> No merchant found for url: {url}")
+            continue
+
+        location_options = merchant.get("location", None)
+        if location_options:
+            # set reference to set_location function in merchant module
+            set_location_fn = get_merchant_function(domain, constants.SET_LOCATION_FUNCTION_NAME)
+        else:
+            set_location_fn = None
+
+        options = {
+            "is_headless": headless,
+            "api_path": merchant.get("api_path", None),
+            "data_filter": merchant.get("data_filter", None),
+            "location": location_options,
+            "base_url": merchant.get("base_url", None)
+        }
+
+        product_data = await scrape_merchant_product(url, options, set_location_fn)
         if product_data is None:
             logger.warning(f"> No product data found for url: {url}")
             continue
 
-        data = parser(product_data)
+        data = parser_fn(product_data)
         data.display_product()
 
 async def process_products(product_list: list[Product], headless: bool = False) -> None:

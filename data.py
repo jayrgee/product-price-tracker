@@ -14,24 +14,31 @@ MERCHANTS = [
         "name": "Chemist Warehouse",
         "base_url": "https://www.chemistwarehouse.com.au/",
         "api_path": None,
-        "data_list": ["product"]
+        "data_filter": ["product"]
     },
     {
         "name": "Coles",
         "base_url": "https://www.coles.com.au/",
         "api_path": None,
-        "data_list": ["product"]
+        "data_filter": ["product"]
     },
     {
         "name": "IGA",
         "base_url": "https://www.igashop.com.au/",
-        "api_path": None,
-        "data_list": ["product"]
+        "api_path": "api/storefront/stores/\d+/products/",
+        "data_filter": [],
+        "location": {
+            "location_url": "https://www.igashop.com.au/",
+            "location_input_selector": "input#search-location",
+            "location_input_value": "3000",
+            "location_api": "/api/storefront/stores\?RSID",
+            "location_filter": []
+        }
     },
     {
         "name": "Woolworths",
         "base_url": "https://www.woolworths.com.au/",
         "api_path": "/apis/ui/product/detail/",
-        "data_list": ["Product"]
+        "data_filter": ["Product"]
     }
 ]

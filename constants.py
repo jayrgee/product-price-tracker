@@ -1,1 +1,2 @@
-PARSE_FUNCTION_NAME = "parse_product"
+PARSE_PRODUCT_FUNCTION_NAME = "parse_product"
+SET_LOCATION_FUNCTION_NAME = "set_location"
