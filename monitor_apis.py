@@ -51,15 +51,16 @@ async def capture_api_response(
 
     logger.info(f"< {resource_type} Response: {request_id} : {status} : {url}")
 
-    try:
-        body = await tab.get_network_response_body(request_id)
-    except Exception as e:
-        logger.error(f"Failed to get response body: {e}")
-        return
+    if 200 <= status < 300:
+        try:
+            body = await tab.get_network_response_body(request_id)
+        except Exception as e:
+            logger.error(f"Failed to get response body: {e}")
+            return
 
-    data_list.append({"url": url, "body": body, "status": status})
+        data_list.append({"url": url, "body": body, "status": status})
 
-    await tab.disable_network_events()
+        await tab.disable_network_events()
 
 
 async def monitor_api_calls(tab: Tab, url: str, api_paths: list[str]) -> list[dict]:
