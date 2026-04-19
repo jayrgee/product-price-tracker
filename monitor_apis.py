@@ -2,6 +2,7 @@ import asyncio
 import logging
 import re
 from functools import partial
+from http import HTTPStatus
 from pydoll.browser.tab import Tab
 from pydoll.protocol.network.events import (
     NetworkEvent,
@@ -51,7 +52,7 @@ async def capture_api_response(
 
     logger.info(f"< {resource_type} Response: {request_id} : {status} : {url}")
 
-    if 200 <= status < 300:
+    if status == HTTPStatus.OK:
         try:
             body = await tab.get_network_response_body(request_id)
         except Exception as e:
